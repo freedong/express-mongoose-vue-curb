@@ -13,11 +13,11 @@
       <el-table-column label="台词" prop="favourite"></el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
-          <el-button size="small" type="primary" @click="toDetail()">图片详情</el-button>
-          <el-button size="small" type="primary" @click="Detail()">详情</el-button>
+          <el-button size="small" type="primary" @click="toDetail(scope.row._id)">图片详情</el-button>
+          <el-button size="small" type="primary" @click="Detail(scope.row)">详情</el-button>
           <el-button size="small" type="success" @click="modify(scope.row)">修改</el-button>
           <el-button size="small" type="danger" @click="deleteD(scope.row._id)">删除</el-button>
-          <el-button size="small" type="warning" @click="addpic()">添加图片</el-button>
+          <el-button size="small" type="warning" @click="addpic(scope.row['_id'])">添加图片</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -94,6 +94,54 @@
     </el-dialog>
 
 
+    <!-- 详情数据对话框 -->
+    <el-dialog title="详情数据" :visible.sync="detailsFormVisible" class="addArea" modal custom-class="addFormArea">
+      <el-form :model="detailsForm" class="addForm">
+        <el-form-item label="英雄" :label-width="formLabelWidth" readonly>
+          <el-input v-model="detailsForm.name" auto-complete="off" readonly></el-input>
+        </el-form-item>
+        <el-form-item label="年龄" :label-width="formLabelWidth" readonly>
+          <el-input v-model="detailsForm.age" auto-complete="off" readonly></el-input>
+        </el-form-item>
+        <el-form-item label="性别" :label-width="formLabelWidth" readonly disabled>
+          <el-select v-model="detailsForm.sex" placeholder="请选择性别" class="sexArea" readonly disabled>
+            <el-option label="汉子" value="man"></el-option>
+            <el-option label="妹子" value="woman"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="籍贯" :label-width="formLabelWidth" readonly>
+          <el-input v-model="detailsForm.address" auto-complete="off" readonly></el-input>
+        </el-form-item>
+        <el-form-item label="位置" :label-width="formLabelWidth" readonly>
+          <el-input v-model="detailsForm.dowhat" auto-complete="off" readonly></el-input>
+        </el-form-item>
+        <el-form-item label="台词" :label-width="formLabelWidth" readonly>
+          <el-input v-model="detailsForm.favourite" auto-complete="off" readonly></el-input>
+        </el-form-item>
+        <el-form-item label="背景" :label-width="formLabelWidth" >
+          <el-input v-model="detailsForm.explain" auto-complete="off" readonly></el-input>
+        </el-form-item>
+      </el-form>
+      <div class="dialog-footer" slot="footer">
+        <el-button @click="detailsFormVisible = false">取 消</el-button>
+      </div>
+    </el-dialog>
+
+
+    <!-- 添加图片 -->
+    <el-dialog title="添加图片" :visible.sync="addpicVisible" class="addPicArea" @close="closePicAdd">
+      <el-form :model="addpicform">
+        <el-form-item label="图片地址" :label-width="formLabelWidth">
+          <el-input v-model="addpicform.url" auto-complete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="addpicVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addpicSure">确 定</el-button>
+      </div>
+    </el-dialog>
+
+
 
   </div>
 </template>
@@ -118,6 +166,22 @@ export default {
       formLabelWidth:"120px",          //表单宽度
       modifyFormVisible:false,      //修改按钮是否显示
       modifyForm:{                 //修改按钮数据
+        name:"",
+        age:"",
+        sex:"",
+        address:"",
+        dowhat:"",
+        favourite:"",
+        explain:"",
+      },
+      modifyId:"",            //修改id
+      addpicVisible:false,    //添加图片对话框
+      addpicform: {           //添加图片
+        url: ""
+      },
+      addpicId:"",            //id
+      detailsFormVisible:false,
+      detailsForm:{                 //修改按钮数据
         name:"",
         age:"",
         sex:"",
@@ -244,11 +308,76 @@ export default {
     modifySure:function(){
       var _this = this;
       // 修改数据用put方法
-      this.$http.put(``).then(function(response){
-
+      this.$http.put(`/apizxd/hero/${this.modifyId}`,this.modifyForm,{
+        emulateJSON:true
+      }).then(function(response){
+        if(response.ok){
+          this.modifyFormVisible = false;
+          this.$message({
+            message:"修改成功",
+            type:"success",
+            onClose:function(){
+              _this.getAll();
+            }
+          });
+        }
       },function(){
 
       });
+    },
+
+    // 添加图片显示对话框
+    addpic:function(id){
+      this.addpicId = id;
+      this.addpicVisible = true;
+    },
+    // 添加图片提交数据
+    addpicSure:function(){
+      //如果没有填入图片地址的话，提示报错
+      if(!this.addpicform.url.trim()){
+        this.$notify.error({
+          title: "错误",
+          message: "请输入正确的图片地址"
+        });
+        return;
+      };
+
+      // var objpic = {
+      //   url:this.addpicform.url
+      // };
+
+      this.$http.put(`/apizxd/addpic/${this.addpicId}`,this.addpicform).then(function(response){
+        if(response.ok){
+          this.addpicVisible = false;
+          this.$notify({
+            title: "成功",
+            message: "添加图片成功",
+            type: "success"
+          });
+        }else{
+          this.$notify.error({
+            title: "错误",
+            message: "添加图片失败"
+          });
+        }
+      },function(){
+        console.log("添加图片失败");
+      });
+    },
+    // 关闭图片对话框 清空数据
+    closePicAdd:function(){
+      this.addpicform.url = "";
+    },
+
+    // 信息详情
+    Detail:function(row){
+      this.detailsFormVisible = true;
+      this.detailsForm = Object.assign({},row);
+    },
+    // 图片详情
+    toDetail:function(id){
+      //通过这种方式也可以实现跳转
+      this.$router.push(`/details/${id}`);
     },
   },
 

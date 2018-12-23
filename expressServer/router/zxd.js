@@ -45,7 +45,7 @@ router.post("/hero",(req,res) => {
 
 
 // 通过id更新一条信息  更新
-router.put("/hero/:id",() => {
+router.put("/hero/:id",(req,res) => {
   Hero.findOneAndUpdate({
     _id:req.params.id
   },{
